@@ -1,0 +1,59 @@
+{
+  "name": "dsh-quote-to-chat",
+  "version": "0.2.0",
+  "description": "Select text in a DSH reply: a floating toolbar that quotes it into the composer draft or opens a side chat about it.",
+  "icon": "./icon.svg",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "lib/client.js",
+    "locale/*.json",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md",
+    "README_EN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24"
+  },
+  "scripts": {
+    "test": "node --test test/verify.mjs",
+    "publish:github": "node tools/publish-to-github.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QIN-SMART/dsh-quote-to-chat.git"
+  },
+  "homepage": "https://github.com/QIN-SMART/dsh-quote-to-chat#readme",
+  "bugs": {
+    "url": "https://github.com/QIN-SMART/dsh-quote-to-chat/issues"
+  },
+  "author": "QIN-SMART",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "selection",
+    "quote",
+    "side-chat"
+  ],
+  "license": "MIT"
+}

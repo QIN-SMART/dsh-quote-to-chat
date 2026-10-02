@@ -1,0 +1,10 @@
+# 临时产物
+.tmp/
+node_modules/
+*.log
+.DS_Store
+
+# 真实界面截图（会拍到真实会话标题与内容）：一律不入库。
+# 仓库里 docs/ 下只放合成数据的截图（由 demo/quote-mock.html 生成）。
+docs/real-ui*.png
+docs/real-ui*.txt

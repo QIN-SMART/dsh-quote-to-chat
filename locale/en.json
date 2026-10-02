@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Select to Quote (dsh-quote-to-chat)",
+    "description": "Select text in a reply, then quote it into the composer, ask about it in a side chat, or copy the original."
+  }
+}

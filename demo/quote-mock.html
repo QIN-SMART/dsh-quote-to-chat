@@ -1,0 +1,139 @@
+<!doctype html>
+<!--
+  dsh-quote-to-chat —— 合成演示页（README 截图来源，也当手动实验台用）。
+
+  为什么需要它：真机截图（tools/real-ui-check.mjs 产出的 docs/real-ui-*.png）
+  拍的是**真实会话**，含真实标题与正文，永远不能进仓库。README 只用这里的合成内容出图。
+
+  用法：
+    open demo/quote-mock.html?pane=light      # 浅色：选区 + 浮动工具条
+    open demo/quote-mock.html?pane=dark       # 深色：同一场景
+    open demo/quote-mock.html?pane=composer   # 点「添加到对话」后草稿里的引用块
+  出图（无头）：见本文件末尾的命令注释。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>dsh-quote-to-chat — 合成演示</title>
+<style>
+  :root {
+    /* 与 DSH 原生的菜单令牌保持同名，方便对照插件里的写法 */
+    --dsw-specific-menu: #f8f9fa94;
+    --dsw-alias-bg-layer-1: #ffffff;
+    --dsw-alias-label-primary: #1b1c1e;
+    --dsw-alias-label-secondary: #5f6368;
+    --dsw-alias-border-l2: #e3e5e8;
+    --dsw-alias-state-business-primary: #4176e6;
+    --dsw-menu-backdrop-filter: blur(12px) saturate(1.4);
+  }
+  body[data-ds-dark-theme] {
+    --dsw-specific-menu: #43454a73;
+    --dsw-alias-bg-layer-1: #232324;
+    --dsw-alias-label-primary: #eceef1;
+    --dsw-alias-label-secondary: #9aa0a6;
+    --dsw-alias-border-l2: #35373b;
+    --dsw-alias-state-business-primary: #6b93f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.65 -apple-system, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
+    color: var(--dsw-alias-label-primary);
+    background: var(--dsw-alias-bg-layer-1);
+    padding: 22px 26px;
+  }
+  .wrap { max-width: 760px; }
+  .role { font-weight: 600; margin: 0 0 6px; }
+  .reply p { margin: 0 0 12px; }
+  .reply ul { margin: 0 0 12px; padding-left: 20px; }
+  .reply li { margin: 2px 0; }
+  mark { background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 26%, transparent); border-radius: 2px; }
+
+  /* 浮动工具条：把原生菜单填充铺在**不透明**应用层色上（本插件的关键不变量） */
+  .bar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 12px;
+    background-color: var(--dsw-alias-bg-layer-1);
+    background-image: linear-gradient(var(--dsw-specific-menu), var(--dsw-specific-menu));
+    backdrop-filter: var(--dsw-menu-backdrop-filter);
+    box-shadow: 0 6px 20px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.05);
+    margin: 10px 0 14px;
+  }
+  .bar button {
+    font: inherit; font-size: 13px;
+    color: var(--dsw-alias-label-primary);
+    background: none; border: 0; border-radius: 8px;
+    padding: 5px 10px; cursor: default;
+  }
+  .bar button.hover { background: rgba(127,127,127,.16); }
+  .bar .sep { width: 1px; height: 18px; background: var(--dsw-alias-border-l2); margin: 0 2px; }
+  .toast {
+    margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary);
+  }
+
+  /* composer 里的引用块 */
+  .composer {
+    border: 1px solid var(--dsw-alias-border-l2); border-radius: 14px;
+    padding: 12px 14px; margin-top: 16px; min-height: 118px; white-space: pre-wrap;
+    color: var(--dsw-alias-label-primary);
+  }
+  .composer .caret::after { content: ""; display: inline-block; width: 1.5px; height: 1.05em; background: var(--dsw-alias-state-business-primary); vertical-align: -2px; }
+  .caption { margin: 0 0 14px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="caption" id="caption"></p>
+  <div class="reply" id="reply">
+    <p class="role">DSH</p>
+    <p>发布前先跑一遍自测与真机检查：前者在 mock DOM 上加载真实产物，后者用 CDP 驱动真实界面。<mark>两套都过，才算敢交付</mark>。</p>
+    <ul>
+      <li>自测：<code>node --test test/verify.mjs</code></li>
+      <li>真机：<code>node tools/real-ui-check.mjs</code></li>
+    </ul>
+    <p>然后推仓库、打 tag、发 npm，最后在临时目录按用户命令真装一次。</p>
+  </div>
+  <div class="composer" id="composer" hidden></div>
+</div>
+
+<script>
+const pane = new URLSearchParams(location.search).get('pane') || 'light';
+const reply = document.getElementById('reply');
+const composer = document.getElementById('composer');
+const caption = document.getElementById('caption');
+if (pane === 'dark') document.body.dataset.dsDarkTheme = '';
+
+// 工具条（合成 DOM，仅用于出图）
+function toolbar(active, note) {
+  const el = document.createElement('div');
+  el.className = 'bar';
+  el.innerHTML = '<button class="' + (active === 'add' ? 'hover' : '') + '">添加到对话</button>'
+    + '<span class="sep"></span><button class="' + (active === 'side' ? 'hover' : '') + '">侧边提问</button>'
+    + '<span class="sep"></span><button class="' + (active === 'copy' ? 'hover' : '') + '">复制</button>'
+    + (note ? '<span class="toast">' + note + '</span>' : '');
+  return el;
+}
+
+if (pane === 'composer') {
+  reply.hidden = true;
+  composer.hidden = false;
+  composer.textContent = '> 两套都过，才算敢交付\n\n';
+  const caret = document.createElement('span');
+  caret.className = 'caret';
+  composer.appendChild(caret);
+  caption.textContent = '点「添加到对话」→ 引用块落进草稿，光标回到输入框';
+} else {
+  caption.textContent = pane === 'dark'
+    ? '深色主题：同一场景，材质 alpha 仍是 1'
+    : '在回复正文里选中一段 → 选区上方弹出工具条';
+  // 工具条贴在**选区所在段落**上方（与插件实际定位一致）
+  const selected = reply.querySelector('mark').closest('p');
+  selected.parentNode.insertBefore(toolbar(null, ''), selected);
+}
+</script>
+</body>
+</html>

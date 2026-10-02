@@ -1,0 +1,50 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: node --test (${{ matrix.os }} / node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # 本包没有构建步骤、没有运行时依赖：直接在真实产物 lib/client.js 上跑离线断言。
+      - name: Self test
+        run: node --test test/verify.mjs
+
+  manifest:
+    name: package manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Declared entry points exist
+        shell: bash
+        run: |
+          node -e "
+          const fs = require('node:fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const paths = [pkg.main, pkg.icon, pkg.dsh.bundle.patch,
+                         pkg.exports['.'], pkg.exports['./client'], pkg.exports['./locale/*.json']];
+          const missing = paths.filter(p => p && !p.includes('*') && !fs.existsSync(p));
+          if (missing.length) { console.error('missing:', missing); process.exit(1); }
+          if (pkg.dsh.client.platform !== 'web') { console.error('platform must be web'); process.exit(1); }
+          const client = fs.readFileSync('lib/client.js', 'utf8');
+          if (!client.includes(\`id: '\${pkg.name}'\`)) {
+            console.error('ModuleLoader id must equal the package name'); process.exit(1);
+          }
+          console.log('manifest ok');
+          "
